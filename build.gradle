@@ -1,0 +1,99 @@
+plugins {
+    id "java-gradle-plugin"
+    id "maven-publish"
+    id "signing"
+}
+
+base {
+    java.toolchain.languageVersion = JavaLanguageVersion.of(8)
+    compileJava.options.encoding = compileTestJava.options.encoding = javadoc.options.encoding = "UTF-8"
+
+    group = project.maven_group ?: rootProject.maven_group
+    archivesName = project.maven_name ?: rootProject.maven_name
+    version = project.maven_version ?: rootProject.maven_version
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation gradleApi()
+
+    api "org.ow2.asm:asm-commons:9.5"
+}
+
+gradlePlugin {
+    plugins {
+        classtokenreplacer {
+            id = "net.raphimc.class-token-replacer"
+            implementationClass = "net.raphimc.classtokenreplacer.ClassTokenReplacerPlugin"
+            displayName = "ClassTokenReplacer"
+            description = "Gradle plugin to replace string tokens in class files during compile time"
+        }
+    }
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.name ?: rootProject.name}" }
+    }
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "reposilite"
+            url = project.maven_version.endsWith("SNAPSHOT") ? "https://maven.lenni0451.net/snapshots" : "https://maven.lenni0451.net/releases"
+
+            credentials(PasswordCredentials)
+            authentication {
+                basic(BasicAuthentication)
+            }
+        }
+    }
+    publications {
+        pluginMaven(MavenPublication) {
+            pom {
+                name = "ClassTokenReplacer"
+                description = "Gradle plugin to replace string tokens in class files during compile time"
+                url = "https://github.com/RaphiMC/ClassTokenReplacer"
+                licenses {
+                    license {
+                        name = "LGPL-3.0 License"
+                        url = "https://github.com/RaphiMC/ClassTokenReplacer/blob/main/LICENSE"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "RK_01"
+                    }
+                }
+                scm {
+                    connection = "scm:git:git://github.com/RaphiMC/ClassTokenReplacer.git"
+                    developerConnection = "scm:git:ssh://github.com/RaphiMC/ClassTokenReplacer.git"
+                    url = "https://github.com/RaphiMC/ClassTokenReplacer.git"
+                }
+            }
+        }
+    }
+}
+
+signing {
+    setRequired(false)
+    sign configurations.archives
+    sign publishing.publications.pluginMaven
+}
+
+project.tasks.withType(PublishToMavenRepository).forEach {
+    it.dependsOn(project.tasks.withType(Sign))
+}
