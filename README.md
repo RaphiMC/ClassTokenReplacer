@@ -28,7 +28,7 @@ sourceSets {
 }
 ```
 
-That's it! Now all compiled class files in the main source set will be scanned for the token ``${version}`` and have it replaced with the value specified in the ``replace`` method.
+That's it! Now all compiled class files in the main source set will be scanned for the token ``${version}`` and have it replaced with the value specified in the ``property`` method.
 Be careful to choose placeholders in a way where don't accidentally match some other strings in your code.
 
 ## Contact
