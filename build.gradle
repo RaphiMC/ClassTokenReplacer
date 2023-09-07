@@ -1,6 +1,6 @@
 plugins {
     id "java-gradle-plugin"
-    id "maven-publish"
+    id "com.gradle.plugin-publish" version "1.1.0"
     id "signing"
 }
 
@@ -24,12 +24,15 @@ dependencies {
 }
 
 gradlePlugin {
+    website = "https://github.com/RaphiMC/ClassTokenReplacer"
+    vcsUrl = "https://github.com/RaphiMC/ClassTokenReplacer"
     plugins {
         classtokenreplacer {
             id = "net.raphimc.class-token-replacer"
             implementationClass = "net.raphimc.classtokenreplacer.ClassTokenReplacerPlugin"
             displayName = "ClassTokenReplacer"
             description = "Gradle plugin to replace string tokens in class files during compile time"
+            tags.addAll("replacement", "token replacement")
         }
     }
 }

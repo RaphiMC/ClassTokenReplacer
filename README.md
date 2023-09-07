@@ -6,17 +6,9 @@ This can be used to replace tokens like ``${version}`` with the actual version o
 
 ## Releases
 ### Gradle
-To use ClassTokenReplacer in Gradle you can use this [Maven server](https://maven.lenni0451.net/#/releases/net/raphimc/ClassTokenReplacer).
-You can also find instructions how to implement it into your build script there.
+To use ClassTokenReplacer in your Gradle project you can follow the instructions on the [Gradle Plugin Portal](https://plugins.gradle.org/plugin/net.raphimc.class-token-replacer).
 
 ## Usage
-After adding the repository to your gradle project you can apply the plugin like this:
-```groovy
-plugins {
-    id "net.raphimc.class-token-replacer" version "1.0.0"
-}
-```
-
 The plugin extends all source sets with a new extension called ``classTokenReplacer``. This allows you to specify replacements for your source sets:
 ```groovy
 sourceSets {
