@@ -35,8 +35,8 @@ public class ClassTokenReplacerPlugin implements Plugin<Project> {
             final ClassTokenReplacerExtension extension = set.getExtensions().create(ClassTokenReplacerExtension.class, "classTokenReplacer", ClassTokenReplacerExtensionImpl.class, project.getObjects());
 
             final TaskProvider<ReplaceTokensTask> replaceTask = project.getTasks().register(set.getTaskName("replace", "tokens"), ReplaceTokensTask.class, task -> {
-                task.setSourceSet(set);
-                task.getProperties().putAll(extension.getProperties());
+                task.getSourceSet().set(set);
+                task.getProperties().set(extension.getProperties());
             });
             replaceTask.get().dependsOn(set.getClassesTaskName());
             project.getTasks().getByName(set.getClassesTaskName()).finalizedBy(replaceTask);

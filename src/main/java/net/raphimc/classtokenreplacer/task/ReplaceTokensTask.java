@@ -20,8 +20,9 @@ package net.raphimc.classtokenreplacer.task;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.objectweb.asm.ClassReader;
@@ -35,29 +36,26 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Stream;
 
-public class ReplaceTokensTask extends DefaultTask {
+public abstract class ReplaceTokensTask extends DefaultTask {
 
-    @Internal
-    private SourceSet sourceSet;
+    @Input
+    public abstract Property<SourceSet> getSourceSet();
 
-    @Internal
-    private final MapProperty<String, Object> properties;
+    @Input
+    public abstract MapProperty<String, Object> getProperties();
 
     @Inject
     public ReplaceTokensTask(final ObjectFactory objects) {
-        this.properties = objects.mapProperty(String.class, Object.class);
+        this.getProperties().convention(objects.mapProperty(String.class, Object.class));
     }
 
     @TaskAction
     public void run() throws IOException {
-        Objects.requireNonNull(this.sourceSet, "sourceSet must not be null");
-        Objects.requireNonNull(this.properties, "properties must not be null");
-        final Map<String, Object> properties = this.properties.get();
+        final Map<String, Object> properties = this.getProperties().get();
 
-        for (File classesDir : this.sourceSet.getOutput().getClassesDirs()) {
+        for (File classesDir : this.getSourceSet().get().getOutput().getClassesDirs()) {
             if (!classesDir.isDirectory()) continue;
             final Path root = classesDir.toPath();
 
@@ -121,18 +119,6 @@ public class ReplaceTokensTask extends DefaultTask {
 
     public void property(final String property, final Provider<Object> value) {
         this.getProperties().put(property, value);
-    }
-
-    public SourceSet getSourceSet() {
-        return this.sourceSet;
-    }
-
-    public MapProperty<String, Object> getProperties() {
-        return this.properties;
-    }
-
-    public void setSourceSet(final SourceSet sourceSet) {
-        this.sourceSet = sourceSet;
     }
 
 }
