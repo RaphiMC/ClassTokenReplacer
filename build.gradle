@@ -56,7 +56,7 @@ publishing {
     repositories {
         maven {
             name = "reposilite"
-            url = project.maven_version.endsWith("SNAPSHOT") ? "https://maven.lenni0451.net/snapshots" : "https://maven.lenni0451.net/releases"
+            url = "https://maven.lenni0451.net/" + (project.maven_version.endsWith("SNAPSHOT") ? "snapshots" : "releases")
 
             credentials(PasswordCredentials)
             authentication {
