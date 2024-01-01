@@ -1,6 +1,6 @@
 /*
  * This file is part of ClassTokenReplacer - https://github.com/RaphiMC/ClassTokenReplacer
- * Copyright (C) 2023 RK_01/RaphiMC and contributors
+ * Copyright (C) 2023-2024 RK_01/RaphiMC and contributors
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
