@@ -85,16 +85,18 @@ public abstract class ReplaceTokensTask extends DefaultTask {
                                     }
                                 } else if (insn instanceof InvokeDynamicInsnNode) {
                                     final InvokeDynamicInsnNode invokeDynamicInsnNode = (InvokeDynamicInsnNode) insn;
-                                    for (int i = 0; i < invokeDynamicInsnNode.bsmArgs.length; i++) {
-                                        if (invokeDynamicInsnNode.bsmArgs[i] instanceof String) {
-                                            String value = (String) invokeDynamicInsnNode.bsmArgs[i];
-                                            for (Map.Entry<String, Object> entry : properties.entrySet()) {
-                                                value = value.replace(entry.getKey(), entry.getValue().toString());
-                                                if (!invokeDynamicInsnNode.bsmArgs[i].equals(value)) {
-                                                    hasReplacements = true;
+                                    if (invokeDynamicInsnNode.bsm.getOwner().equals("java/lang/invoke/StringConcatFactory") && invokeDynamicInsnNode.bsm.getName().equals("makeConcatWithConstants")) {
+                                        for (int i = 0; i < invokeDynamicInsnNode.bsmArgs.length; i++) {
+                                            if (invokeDynamicInsnNode.bsmArgs[i] instanceof String) {
+                                                String value = (String) invokeDynamicInsnNode.bsmArgs[i];
+                                                for (Map.Entry<String, Object> entry : properties.entrySet()) {
+                                                    value = value.replace(entry.getKey(), entry.getValue().toString());
+                                                    if (!invokeDynamicInsnNode.bsmArgs[i].equals(value)) {
+                                                        hasReplacements = true;
+                                                    }
                                                 }
+                                                invokeDynamicInsnNode.bsmArgs[i] = value;
                                             }
-                                            invokeDynamicInsnNode.bsmArgs[i] = value;
                                         }
                                     }
                                 }
