@@ -24,6 +24,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.tasks.Jar;
 import org.jetbrains.annotations.NotNull;
 
 public class ClassTokenReplacerPlugin implements Plugin<Project> {
@@ -34,12 +35,26 @@ public class ClassTokenReplacerPlugin implements Plugin<Project> {
         sourceSets.all(set -> {
             final ClassTokenReplacerExtension extension = set.getExtensions().create(ClassTokenReplacerExtension.class, "classTokenReplacer", ClassTokenReplacerExtensionImpl.class, project.getObjects());
 
-            final TaskProvider<ReplaceTokensTask> replaceTask = project.getTasks().register(set.getTaskName("replace", "tokens"), ReplaceTokensTask.class, task -> {
-                task.getSourceSet().set(set);
+            final TaskProvider<ReplaceTokensTask> replaceTaskProvider = project.getTasks().register(set.getTaskName("replace", "tokens"), ReplaceTokensTask.class, task -> {
+                task.getClassesDirs().set(set.getOutput().getClassesDirs());
                 task.getProperties().set(extension.getProperties());
+                task.getOutputDir().set(project.getLayout().getBuildDirectory().dir("classTokenReplacer/" + set.getName()).get().getAsFile());
             });
-            replaceTask.get().dependsOn(set.getClassesTaskName());
-            project.getTasks().getByName(set.getClassesTaskName()).finalizedBy(replaceTask);
+            final ReplaceTokensTask replaceTask = replaceTaskProvider.get();
+
+            replaceTask.dependsOn(set.getClassesTaskName());
+            final Jar jarTask = (Jar) project.getTasks().findByName(set.getJarTaskName());
+            if (jarTask != null) {
+                jarTask.dependsOn(replaceTask);
+                jarTask.from(replaceTask.getOutputDir().get());
+                jarTask.exclude(fileTreeElement -> {
+                    if (fileTreeElement.getRelativePath().getFile(replaceTask.getOutputDir().get().getAsFile()).equals(fileTreeElement.getFile())) {
+                        return false;
+                    }
+
+                    return replaceTask.getModifiedClasses().get().contains(fileTreeElement.getRelativePath().getPathString());
+                });
+            }
         });
     }
 

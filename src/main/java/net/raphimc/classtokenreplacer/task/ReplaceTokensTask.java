@@ -18,13 +18,14 @@
 package net.raphimc.classtokenreplacer.task;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.provider.SetProperty;
+import org.gradle.api.tasks.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.*;
@@ -40,31 +41,39 @@ import java.util.stream.Stream;
 
 public abstract class ReplaceTokensTask extends DefaultTask {
 
-    @Input
-    public abstract Property<SourceSet> getSourceSet();
+    @InputFiles
+    public abstract Property<FileCollection> getClassesDirs();
 
     @Input
     public abstract MapProperty<String, Object> getProperties();
 
+    @OutputDirectory
+    public abstract RegularFileProperty getOutputDir();
+
+    @Internal
+    public abstract SetProperty<String> getModifiedClasses();
+
     @Inject
     public ReplaceTokensTask(final ObjectFactory objects) {
         this.getProperties().convention(objects.mapProperty(String.class, Object.class));
+        this.getModifiedClasses().convention(objects.setProperty(String.class));
     }
 
     @TaskAction
     public void run() throws IOException {
         final Map<String, Object> properties = this.getProperties().get();
+        final File outputDir = this.getOutputDir().get().getAsFile();
 
-        for (File classesDir : this.getSourceSet().get().getOutput().getClassesDirs()) {
+        for (File classesDir : this.getClassesDirs().get()) {
             if (!classesDir.isDirectory()) continue;
             final Path root = classesDir.toPath();
 
             try (Stream<Path> stream = Files.walk(root)) {
-                stream.forEach(path -> {
+                stream.forEach(sourcePath -> {
                     try {
-                        final String relative = root.relativize(path).toString();
+                        final String relative = root.relativize(sourcePath).toString();
                         if (!relative.endsWith(".class")) return;
-                        final byte[] bytecode = Files.readAllBytes(path);
+                        final byte[] bytecode = Files.readAllBytes(sourcePath);
                         final ClassNode classNode = new ClassNode();
                         new ClassReader(bytecode).accept(classNode, 0);
                         boolean hasReplacements = false;
@@ -119,7 +128,10 @@ public abstract class ReplaceTokensTask extends DefaultTask {
                             final ClassWriter writer = new ClassWriter(0);
                             classNode.accept(writer);
                             final byte[] result = writer.toByteArray();
-                            Files.write(path, result);
+                            final Path targetPath = outputDir.toPath().resolve(relative);
+                            Files.createDirectories(targetPath.getParent());
+                            Files.write(targetPath, result);
+                            this.getModifiedClasses().add(relative.replace(File.separatorChar, '/'));
                         }
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
