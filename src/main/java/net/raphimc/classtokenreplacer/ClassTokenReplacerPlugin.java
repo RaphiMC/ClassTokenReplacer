@@ -27,6 +27,8 @@ import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.tasks.Jar;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
+
 public class ClassTokenReplacerPlugin implements Plugin<Project> {
 
     @Override
@@ -48,11 +50,11 @@ public class ClassTokenReplacerPlugin implements Plugin<Project> {
                 jarTask.dependsOn(replaceTask);
                 jarTask.from(replaceTask.getOutputDir().get());
                 jarTask.exclude(fileTreeElement -> {
-                    if (fileTreeElement.getRelativePath().getFile(replaceTask.getOutputDir().get().getAsFile()).equals(fileTreeElement.getFile())) {
+                    final File modifiedFile = fileTreeElement.getRelativePath().getFile(replaceTask.getOutputDir().get().getAsFile());
+                    if (modifiedFile.equals(fileTreeElement.getFile())) {
                         return false;
                     }
-
-                    return replaceTask.getModifiedClasses().get().contains(fileTreeElement.getRelativePath().getPathString());
+                    return modifiedFile.exists();
                 });
             }
         });

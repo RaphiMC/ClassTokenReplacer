@@ -24,8 +24,10 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.provider.SetProperty;
-import org.gradle.api.tasks.*;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.TaskAction;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.*;
@@ -50,13 +52,9 @@ public abstract class ReplaceTokensTask extends DefaultTask {
     @OutputDirectory
     public abstract RegularFileProperty getOutputDir();
 
-    @Internal
-    public abstract SetProperty<String> getModifiedClasses();
-
     @Inject
     public ReplaceTokensTask(final ObjectFactory objects) {
         this.getProperties().convention(objects.mapProperty(String.class, Object.class));
-        this.getModifiedClasses().convention(objects.setProperty(String.class));
     }
 
     @TaskAction
@@ -131,7 +129,6 @@ public abstract class ReplaceTokensTask extends DefaultTask {
                             final Path targetPath = outputDir.toPath().resolve(relative);
                             Files.createDirectories(targetPath.getParent());
                             Files.write(targetPath, result);
-                            this.getModifiedClasses().add(relative.replace(File.separatorChar, '/'));
                         }
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
