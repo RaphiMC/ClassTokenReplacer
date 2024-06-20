@@ -54,7 +54,7 @@ public class ClassTokenReplacerPlugin implements Plugin<Project> {
                     if (modifiedFile.equals(fileTreeElement.getFile())) {
                         return false;
                     }
-                    return modifiedFile.exists();
+                    return modifiedFile.isFile();
                 });
             }
         });
