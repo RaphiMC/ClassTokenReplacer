@@ -38,7 +38,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 public abstract class ReplaceTokensTask extends DefaultTask {
@@ -59,7 +61,6 @@ public abstract class ReplaceTokensTask extends DefaultTask {
 
     @TaskAction
     public void run() throws IOException {
-        final Map<String, Object> properties = this.getProperties().get();
         final File outputDir = this.getOutputDir().get().getAsFile();
 
         for (File classesDir : this.getClassesDirs().get()) {
@@ -74,55 +75,38 @@ public abstract class ReplaceTokensTask extends DefaultTask {
                         final byte[] bytecode = Files.readAllBytes(sourcePath);
                         final ClassNode classNode = new ClassNode();
                         new ClassReader(bytecode).accept(classNode, 0);
-                        boolean hasReplacements = false;
+                        final AtomicBoolean hasReplacements = new AtomicBoolean(false);
 
                         for (MethodNode methodNode : classNode.methods) {
                             for (AbstractInsnNode insn : methodNode.instructions) {
                                 if (insn instanceof LdcInsnNode) {
                                     final LdcInsnNode ldcInsnNode = (LdcInsnNode) insn;
                                     if (ldcInsnNode.cst instanceof String) {
-                                        String cst = (String) ldcInsnNode.cst;
-                                        for (Map.Entry<String, Object> entry : properties.entrySet()) {
-                                            cst = cst.replace(entry.getKey(), entry.getValue().toString());
-                                            if (!ldcInsnNode.cst.equals(cst)) {
-                                                hasReplacements = true;
-                                            }
-                                        }
-                                        ldcInsnNode.cst = cst;
+                                        ldcInsnNode.cst = this.replaceTokens((String) ldcInsnNode.cst, hasReplacements);
                                     }
                                 } else if (insn instanceof InvokeDynamicInsnNode) {
                                     final InvokeDynamicInsnNode invokeDynamicInsnNode = (InvokeDynamicInsnNode) insn;
                                     if (invokeDynamicInsnNode.bsm.getOwner().equals("java/lang/invoke/StringConcatFactory") && invokeDynamicInsnNode.bsm.getName().equals("makeConcatWithConstants")) {
                                         for (int i = 0; i < invokeDynamicInsnNode.bsmArgs.length; i++) {
                                             if (invokeDynamicInsnNode.bsmArgs[i] instanceof String) {
-                                                String value = (String) invokeDynamicInsnNode.bsmArgs[i];
-                                                for (Map.Entry<String, Object> entry : properties.entrySet()) {
-                                                    value = value.replace(entry.getKey(), entry.getValue().toString());
-                                                    if (!invokeDynamicInsnNode.bsmArgs[i].equals(value)) {
-                                                        hasReplacements = true;
-                                                    }
-                                                }
-                                                invokeDynamicInsnNode.bsmArgs[i] = value;
+                                                invokeDynamicInsnNode.bsmArgs[i] = this.replaceTokens((String) invokeDynamicInsnNode.bsmArgs[i], hasReplacements);
                                             }
                                         }
                                     }
                                 }
                             }
+                            this.handleAnnotations(methodNode.visibleAnnotations, hasReplacements);
+                            this.handleAnnotations(methodNode.invisibleAnnotations, hasReplacements);
                         }
                         for (FieldNode fieldNode : classNode.fields) {
                             if (fieldNode.value instanceof String) {
-                                String value = (String) fieldNode.value;
-                                for (Map.Entry<String, Object> entry : properties.entrySet()) {
-                                    value = value.replace(entry.getKey(), entry.getValue().toString());
-                                    if (!fieldNode.value.equals(value)) {
-                                        hasReplacements = true;
-                                    }
-                                }
-                                fieldNode.value = value;
+                                fieldNode.value = this.replaceTokens((String) fieldNode.value, hasReplacements);
                             }
+                            this.handleAnnotations(fieldNode.visibleAnnotations, hasReplacements);
+                            this.handleAnnotations(fieldNode.invisibleAnnotations, hasReplacements);
                         }
 
-                        if (hasReplacements) {
+                        if (hasReplacements.get()) {
                             final ClassWriter writer = new ClassWriter(0);
                             classNode.accept(writer);
                             final byte[] result = writer.toByteArray();
@@ -144,6 +128,45 @@ public abstract class ReplaceTokensTask extends DefaultTask {
 
     public void property(final String property, final Provider<Object> value) {
         this.getProperties().put(property, value);
+    }
+
+    private void handleAnnotations(final List<AnnotationNode> annotations, final AtomicBoolean hasReplacements) {
+        if (annotations == null) return;
+
+        for (AnnotationNode annotationNode : annotations) {
+            this.handleAnnotation(annotationNode, hasReplacements);
+        }
+    }
+
+    private void handleAnnotation(final AnnotationNode annotationNode, final AtomicBoolean hasReplacements) {
+        if (annotationNode.values == null) return;
+
+        for (int i = 1; i < annotationNode.values.size(); i += 2) {
+            final Object value = annotationNode.values.get(i);
+            if (value instanceof String) {
+                annotationNode.values.set(i, this.replaceTokens((String) value, hasReplacements));
+            } else if (value instanceof List) {
+                final List<Object> list = (List<Object>) value;
+                for (int j = 0; j < list.size(); j++) {
+                    if (list.get(j) instanceof String) {
+                        list.set(j, this.replaceTokens((String) list.get(j), hasReplacements));
+                    }
+                }
+            } else if (value instanceof AnnotationNode) {
+                this.handleAnnotation((AnnotationNode) value, hasReplacements);
+            }
+        }
+    }
+
+    private String replaceTokens(String str, final AtomicBoolean hasReplacements) {
+        final String original = str;
+        for (Map.Entry<String, Object> entry : this.getProperties().get().entrySet()) {
+            str = str.replace(entry.getKey(), entry.getValue().toString());
+            if (!original.equals(str)) {
+                hasReplacements.set(true);
+            }
+        }
+        return str;
     }
 
 }
