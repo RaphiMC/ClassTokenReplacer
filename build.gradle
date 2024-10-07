@@ -20,7 +20,7 @@ repositories {
 dependencies {
     compileOnly gradleApi()
 
-    api "org.ow2.asm:asm-commons:9.7"
+    api "org.ow2.asm:asm-commons:9.7.1"
 }
 
 gradlePlugin {
