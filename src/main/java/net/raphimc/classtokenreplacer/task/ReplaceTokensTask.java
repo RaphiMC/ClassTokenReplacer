@@ -77,6 +77,9 @@ public abstract class ReplaceTokensTask extends DefaultTask {
                         new ClassReader(bytecode).accept(classNode, 0);
                         final AtomicBoolean hasReplacements = new AtomicBoolean(false);
 
+                        handleAnnotations(classNode.visibleAnnotations, hasReplacements);
+                        handleAnnotations(classNode.invisibleAnnotations, hasReplacements);
+
                         for (MethodNode methodNode : classNode.methods) {
                             for (AbstractInsnNode insn : methodNode.instructions) {
                                 if (insn instanceof LdcInsnNode) {
