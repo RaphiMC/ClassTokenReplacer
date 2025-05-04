@@ -1,0 +1,47 @@
+plugins {
+    id "maven-publish"
+    id "signing"
+    id "base.lenni0451-maven-publishing"
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+publishing {
+    publications {
+        pluginMaven(MavenPublication) {
+            pom {
+                name = "ClassTokenReplacer"
+                description = "Gradle plugin to replace string tokens in class files during compile time"
+                url = "https://github.com/RaphiMC/ClassTokenReplacer"
+                licenses {
+                    license {
+                        name = "LGPL-3.0 License"
+                        url = "https://github.com/RaphiMC/ClassTokenReplacer/blob/main/LICENSE"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "RK_01"
+                    }
+                }
+                scm {
+                    connection = "scm:git:git://github.com/RaphiMC/ClassTokenReplacer.git"
+                    developerConnection = "scm:git:ssh://github.com/RaphiMC/ClassTokenReplacer.git"
+                    url = "https://github.com/RaphiMC/ClassTokenReplacer.git"
+                }
+            }
+        }
+    }
+}
+
+signing {
+    setRequired(false)
+    sign(publishing.publications.pluginMaven)
+}
+
+tasks.withType(PublishToMavenRepository).configureEach {
+    it.dependsOn(tasks.withType(Sign))
+}
