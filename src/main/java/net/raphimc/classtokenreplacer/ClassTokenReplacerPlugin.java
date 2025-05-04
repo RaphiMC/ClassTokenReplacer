@@ -22,6 +22,7 @@ import net.raphimc.classtokenreplacer.extension.ClassTokenReplacerExtensionImpl;
 import net.raphimc.classtokenreplacer.task.ReplaceTokensTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.tasks.Jar;
@@ -34,23 +35,24 @@ public class ClassTokenReplacerPlugin implements Plugin<Project> {
     @Override
     public void apply(@NotNull Project project) {
         final SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
-        sourceSets.all(set -> {
+        sourceSets.configureEach(set -> {
             final ClassTokenReplacerExtension extension = set.getExtensions().create(ClassTokenReplacerExtension.class, "classTokenReplacer", ClassTokenReplacerExtensionImpl.class, project.getObjects());
 
-            final TaskProvider<ReplaceTokensTask> replaceTaskProvider = project.getTasks().register(set.getTaskName("replace", "tokens"), ReplaceTokensTask.class, task -> {
+            final TaskProvider<ReplaceTokensTask> replaceTokensTaskProvider = project.getTasks().register(set.getTaskName("replace", "tokens"), ReplaceTokensTask.class, task -> {
                 task.getClassesDirs().set(set.getOutput().getClassesDirs());
                 task.getProperties().set(extension.getProperties());
                 task.getOutputDir().set(project.getLayout().getBuildDirectory().dir("classTokenReplacer/" + set.getName()).get().getAsFile());
             });
-            final ReplaceTokensTask replaceTask = replaceTaskProvider.get();
+            final ReplaceTokensTask replaceTokensTask = replaceTokensTaskProvider.get();
 
-            replaceTask.dependsOn(set.getClassesTaskName());
+            replaceTokensTask.dependsOn(set.getClassesTaskName());
             final Jar jarTask = (Jar) project.getTasks().findByName(set.getJarTaskName());
             if (jarTask != null) {
-                jarTask.dependsOn(replaceTask);
-                jarTask.from(replaceTask.getOutputDir().get());
+                final RegularFile replacedClassesDir = replaceTokensTask.getOutputDir().get();
+                jarTask.dependsOn(replaceTokensTask);
+                jarTask.from(replacedClassesDir);
                 jarTask.exclude(fileTreeElement -> {
-                    final File modifiedFile = fileTreeElement.getRelativePath().getFile(replaceTask.getOutputDir().get().getAsFile());
+                    final File modifiedFile = fileTreeElement.getRelativePath().getFile(replacedClassesDir.getAsFile());
                     if (modifiedFile.equals(fileTreeElement.getFile())) {
                         return false;
                     }
