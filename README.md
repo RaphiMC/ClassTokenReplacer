@@ -23,6 +23,10 @@ sourceSets {
 That's it! Now all compiled class files in the main source set will be scanned for the token ``${version}`` and have it replaced with the value specified in the ``property`` method.
 Be careful to choose placeholders in a way where don't accidentally match some other strings in your code.
 
+### Additional Options
+You can also specify the following options in the ``classTokenReplacer`` block:
+- ``replaceInPlace`` (boolean, default: false): If set to true, the original class files will be replaced with the modified ones. This is useful if your build setup uses the class files directly. This option requires a project rebuild if the contents of a token changes.
+
 ## Contact
 If you encounter any issues, please report them on the
 [issue tracker](https://github.com/RaphiMC/ClassTokenReplacer/issues).  

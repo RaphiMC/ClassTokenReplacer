@@ -18,6 +18,7 @@
 package net.raphimc.classtokenreplacer.extension;
 
 import org.gradle.api.provider.MapProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.jetbrains.annotations.NotNull;
@@ -35,5 +36,9 @@ public interface ClassTokenReplacerExtension {
     default void property(final String property, final Provider<Object> value) {
         this.getProperties().put(property, value);
     }
+
+    @Input
+    @NotNull
+    Property<Boolean> getReplaceInPlace();
 
 }

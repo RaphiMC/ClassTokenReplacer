@@ -19,6 +19,7 @@ package net.raphimc.classtokenreplacer.extension;
 
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
+import org.gradle.api.provider.Property;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
@@ -26,16 +27,23 @@ import javax.inject.Inject;
 public class ClassTokenReplacerExtensionImpl implements ClassTokenReplacerExtension {
 
     private final MapProperty<String, Object> properties;
+    private final Property<Boolean> replaceInPlace;
 
     @Inject
     public ClassTokenReplacerExtensionImpl(final ObjectFactory objects) {
         this.properties = objects.mapProperty(String.class, Object.class);
+        this.replaceInPlace = objects.property(Boolean.class).convention(false);
     }
 
     @Override
     @NotNull
     public MapProperty<String, Object> getProperties() {
         return this.properties;
+    }
+
+    @Override
+    public @NotNull Property<Boolean> getReplaceInPlace() {
+        return this.replaceInPlace;
     }
 
 }

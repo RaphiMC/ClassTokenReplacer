@@ -51,17 +51,21 @@ public abstract class ReplaceTokensTask extends DefaultTask {
     @Input
     public abstract MapProperty<String, Object> getProperties();
 
+    @Input
+    public abstract Property<Boolean> getReplaceInPlace();
+
     @OutputDirectory
     public abstract RegularFileProperty getOutputDir();
 
     @Inject
     public ReplaceTokensTask(final ObjectFactory objects) {
         this.getProperties().convention(objects.mapProperty(String.class, Object.class));
+        this.getReplaceInPlace().convention(false);
     }
 
     @TaskAction
     public void run() throws IOException {
-        final File outputDir = this.getOutputDir().get().getAsFile();
+        final File outputDir = !this.getReplaceInPlace().get() ? this.getOutputDir().get().getAsFile() : null;
 
         for (File classesDir : this.getClassesDirs().get()) {
             if (!classesDir.isDirectory()) continue;
@@ -114,9 +118,13 @@ public abstract class ReplaceTokensTask extends DefaultTask {
                             final ClassWriter writer = new ClassWriter(0);
                             classNode.accept(writer);
                             final byte[] result = writer.toByteArray();
-                            final Path targetPath = outputDir.toPath().resolve(relative);
-                            Files.createDirectories(targetPath.getParent());
-                            Files.write(targetPath, result);
+                            if (outputDir != null) {
+                                final Path targetPath = outputDir.toPath().resolve(relative);
+                                Files.createDirectories(targetPath.getParent());
+                                Files.write(targetPath, result);
+                            } else {
+                                Files.write(sourcePath, result);
+                            }
                         }
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
