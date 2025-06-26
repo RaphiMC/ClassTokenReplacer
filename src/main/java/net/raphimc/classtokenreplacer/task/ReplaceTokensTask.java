@@ -160,8 +160,11 @@ public abstract class ReplaceTokensTask extends DefaultTask {
             } else if (value instanceof List) {
                 final List<Object> list = (List<Object>) value;
                 for (int j = 0; j < list.size(); j++) {
-                    if (list.get(j) instanceof String) {
-                        list.set(j, this.replaceTokens((String) list.get(j), hasReplacements));
+                    final Object item = list.get(j);
+                    if (item instanceof String) {
+                        list.set(j, this.replaceTokens((String) item, hasReplacements));
+                    } else if (item instanceof AnnotationNode) {
+                        this.handleAnnotation((AnnotationNode) item, hasReplacements);
                     }
                 }
             } else if (value instanceof AnnotationNode) {
