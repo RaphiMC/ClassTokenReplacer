@@ -30,6 +30,8 @@ import org.gradle.jvm.tasks.Jar;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ClassTokenReplacerPlugin implements Plugin<Project> {
 
@@ -49,12 +51,20 @@ public class ClassTokenReplacerPlugin implements Plugin<Project> {
 
             project.afterEvaluate(p -> {
                 if (!extension.getReplaceInPlace().get()) {
+                    final List<Jar> jarTasks = new ArrayList<>();
                     final Jar jarTask = (Jar) p.getTasks().findByName(set.getJarTaskName());
                     if (jarTask != null && jarTask.isEnabled()) {
+                        jarTasks.add(jarTask);
+                    }
+                    final Jar shadowJarTask = (Jar) p.getTasks().findByName(set.getTaskName("shadow", "jar"));
+                    if (shadowJarTask != null && shadowJarTask.isEnabled()) {
+                        jarTasks.add(shadowJarTask);
+                    }
+                    for (Jar jar : jarTasks) {
                         final RegularFile replacedClassesDir = replaceTokensTask.getOutputDir().get();
-                        jarTask.dependsOn(replaceTokensTask);
-                        jarTask.from(replacedClassesDir);
-                        jarTask.exclude(fileTreeElement -> {
+                        jar.dependsOn(replaceTokensTask);
+                        jar.from(replacedClassesDir);
+                        jar.exclude(fileTreeElement -> {
                             final File modifiedFile = fileTreeElement.getRelativePath().getFile(replacedClassesDir.getAsFile());
                             if (modifiedFile.equals(fileTreeElement.getFile())) {
                                 return false;
