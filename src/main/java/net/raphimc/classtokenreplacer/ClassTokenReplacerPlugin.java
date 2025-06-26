@@ -46,28 +46,29 @@ public class ClassTokenReplacerPlugin implements Plugin<Project> {
                 task.getOutputDir().set(project.getLayout().getBuildDirectory().dir("classTokenReplacer/" + set.getName()).get().getAsFile());
             });
             final ReplaceTokensTask replaceTokensTask = replaceTokensTaskProvider.get();
-            replaceTokensTask.dependsOn(set.getClassesTaskName());
 
-            if (!extension.getReplaceInPlace().get()) {
-                final Jar jarTask = (Jar) project.getTasks().findByName(set.getJarTaskName());
-                if (jarTask != null) {
-                    final RegularFile replacedClassesDir = replaceTokensTask.getOutputDir().get();
-                    jarTask.dependsOn(replaceTokensTask);
-                    jarTask.from(replacedClassesDir);
-                    jarTask.exclude(fileTreeElement -> {
-                        final File modifiedFile = fileTreeElement.getRelativePath().getFile(replacedClassesDir.getAsFile());
-                        if (modifiedFile.equals(fileTreeElement.getFile())) {
-                            return false;
-                        }
-                        return modifiedFile.isFile();
-                    });
+            project.afterEvaluate(p -> {
+                if (!extension.getReplaceInPlace().get()) {
+                    final Jar jarTask = (Jar) p.getTasks().findByName(set.getJarTaskName());
+                    if (jarTask != null && jarTask.isEnabled()) {
+                        final RegularFile replacedClassesDir = replaceTokensTask.getOutputDir().get();
+                        jarTask.dependsOn(replaceTokensTask);
+                        jarTask.from(replacedClassesDir);
+                        jarTask.exclude(fileTreeElement -> {
+                            final File modifiedFile = fileTreeElement.getRelativePath().getFile(replacedClassesDir.getAsFile());
+                            if (modifiedFile.equals(fileTreeElement.getFile())) {
+                                return false;
+                            }
+                            return modifiedFile.isFile();
+                        });
+                    }
+                } else {
+                    final Task classesTask = p.getTasks().findByName(set.getClassesTaskName());
+                    if (classesTask != null) {
+                        classesTask.finalizedBy(replaceTokensTask);
+                    }
                 }
-            } else {
-                final Task classesTask = project.getTasks().findByName(set.getClassesTaskName());
-                if (classesTask != null) {
-                    classesTask.finalizedBy(replaceTokensTask);
-                }
-            }
+            });
         });
     }
 

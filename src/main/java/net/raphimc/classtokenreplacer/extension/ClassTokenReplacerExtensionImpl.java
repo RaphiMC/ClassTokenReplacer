@@ -42,7 +42,8 @@ public class ClassTokenReplacerExtensionImpl implements ClassTokenReplacerExtens
     }
 
     @Override
-    public @NotNull Property<Boolean> getReplaceInPlace() {
+    @NotNull
+    public Property<Boolean> getReplaceInPlace() {
         return this.replaceInPlace;
     }
 
