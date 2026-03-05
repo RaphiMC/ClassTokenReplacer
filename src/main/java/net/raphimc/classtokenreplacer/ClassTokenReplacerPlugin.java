@@ -23,7 +23,7 @@ import net.raphimc.classtokenreplacer.task.ReplaceTokensTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.file.RegularFile;
+import org.gradle.api.file.Directory;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.tasks.Jar;
@@ -42,7 +42,7 @@ public class ClassTokenReplacerPlugin implements Plugin<Project> {
             final ClassTokenReplacerExtension extension = set.getExtensions().create(ClassTokenReplacerExtension.class, "classTokenReplacer", ClassTokenReplacerExtensionImpl.class, project.getObjects());
 
             final TaskProvider<ReplaceTokensTask> replaceTokensTaskProvider = project.getTasks().register(set.getTaskName("replace", "tokens"), ReplaceTokensTask.class, task -> {
-                task.getClassesDirs().set(set.getOutput().getClassesDirs());
+                task.getClassesDirs().from(set.getOutput().getClassesDirs());
                 task.getProperties().set(extension.getProperties());
                 task.getReplaceInPlace().set(extension.getReplaceInPlace());
                 task.getOutputDir().set(project.getLayout().getBuildDirectory().dir("classTokenReplacer/" + set.getName()).get().getAsFile());
@@ -61,7 +61,7 @@ public class ClassTokenReplacerPlugin implements Plugin<Project> {
                         jarTasks.add(shadowJarTask);
                     }
                     for (Jar jar : jarTasks) {
-                        final RegularFile replacedClassesDir = replaceTokensTask.getOutputDir().get();
+                        final Directory replacedClassesDir = replaceTokensTask.getOutputDir().get();
                         jar.dependsOn(replaceTokensTask);
                         jar.from(replacedClassesDir);
                         jar.exclude(fileTreeElement -> {

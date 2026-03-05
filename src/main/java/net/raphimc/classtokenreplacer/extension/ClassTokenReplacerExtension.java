@@ -27,14 +27,18 @@ public interface ClassTokenReplacerExtension {
 
     @Input
     @NotNull
-    MapProperty<String, Object> getProperties();
+    MapProperty<String, String> getProperties();
 
-    default void property(final String property, final Object value) {
+    default void property(final String property, final String value) {
         this.getProperties().put(property, value);
     }
 
-    default void property(final String property, final Provider<Object> value) {
-        this.getProperties().put(property, value);
+    default void property(final String property, final Object value) {
+        this.getProperties().put(property, value.toString());
+    }
+
+    default void property(final String property, final Provider<?> value) {
+        this.getProperties().put(property, value.map(Object::toString));
     }
 
     @Input

@@ -18,16 +18,13 @@
 package net.raphimc.classtokenreplacer.task;
 
 import org.gradle.api.DefaultTask;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.OutputDirectory;
-import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.*;
@@ -43,31 +40,37 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
+@CacheableTask
 public abstract class ReplaceTokensTask extends DefaultTask {
 
     @InputFiles
-    public abstract Property<FileCollection> getClassesDirs();
+    @SkipWhenEmpty
+    @PathSensitive(PathSensitivity.RELATIVE)
+    public abstract ConfigurableFileCollection getClassesDirs();
 
     @Input
-    public abstract MapProperty<String, Object> getProperties();
+    public abstract MapProperty<String, String> getProperties();
 
     @Input
     public abstract Property<Boolean> getReplaceInPlace();
 
     @OutputDirectory
-    public abstract RegularFileProperty getOutputDir();
+    public abstract DirectoryProperty getOutputDir();
 
     @Inject
     public ReplaceTokensTask(final ObjectFactory objects) {
-        this.getProperties().convention(objects.mapProperty(String.class, Object.class));
+        this.getProperties().convention(objects.mapProperty(String.class, String.class));
         this.getReplaceInPlace().convention(false);
+
+        this.getOutputs().doNotCacheIf("replaceInPlace is enabled", task -> this.getReplaceInPlace().get());
+        this.getOutputs().upToDateWhen(task -> !this.getReplaceInPlace().get());
     }
 
     @TaskAction
     public void run() throws IOException {
-        final File outputDir = !this.getReplaceInPlace().get() ? this.getOutputDir().get().getAsFile() : null;
+        final Path outputDir = !this.getReplaceInPlace().get() ? this.getOutputDir().get().getAsFile().toPath() : null;
 
-        for (File classesDir : this.getClassesDirs().get()) {
+        for (File classesDir : this.getClassesDirs()) {
             if (!classesDir.isDirectory()) continue;
             final Path root = classesDir.toPath();
 
@@ -119,7 +122,7 @@ public abstract class ReplaceTokensTask extends DefaultTask {
                             classNode.accept(writer);
                             final byte[] result = writer.toByteArray();
                             if (outputDir != null) {
-                                final Path targetPath = outputDir.toPath().resolve(relative);
+                                final Path targetPath = outputDir.resolve(relative);
                                 Files.createDirectories(targetPath.getParent());
                                 Files.write(targetPath, result);
                             } else {
@@ -134,12 +137,16 @@ public abstract class ReplaceTokensTask extends DefaultTask {
         }
     }
 
-    public void property(final String property, final Object value) {
+    public void property(final String property, final String value) {
         this.getProperties().put(property, value);
     }
 
-    public void property(final String property, final Provider<Object> value) {
-        this.getProperties().put(property, value);
+    public void property(final String property, final Object value) {
+        this.getProperties().put(property, value.toString());
+    }
+
+    public void property(final String property, final Provider<?> value) {
+        this.getProperties().put(property, value.map(Object::toString));
     }
 
     private void handleAnnotations(final List<AnnotationNode> annotations, final AtomicBoolean hasReplacements) {
@@ -175,8 +182,8 @@ public abstract class ReplaceTokensTask extends DefaultTask {
 
     private String replaceTokens(String str, final AtomicBoolean hasReplacements) {
         final String original = str;
-        for (Map.Entry<String, Object> entry : this.getProperties().get().entrySet()) {
-            str = str.replace(entry.getKey(), entry.getValue().toString());
+        for (Map.Entry<String, String> entry : this.getProperties().get().entrySet()) {
+            str = str.replace(entry.getKey(), entry.getValue());
             if (!original.equals(str)) {
                 hasReplacements.set(true);
             }

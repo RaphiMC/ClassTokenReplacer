@@ -26,18 +26,18 @@ import javax.inject.Inject;
 
 public class ClassTokenReplacerExtensionImpl implements ClassTokenReplacerExtension {
 
-    private final MapProperty<String, Object> properties;
+    private final MapProperty<String, String> properties;
     private final Property<Boolean> replaceInPlace;
 
     @Inject
     public ClassTokenReplacerExtensionImpl(final ObjectFactory objects) {
-        this.properties = objects.mapProperty(String.class, Object.class);
+        this.properties = objects.mapProperty(String.class, String.class);
         this.replaceInPlace = objects.property(Boolean.class).convention(false);
     }
 
     @Override
     @NotNull
-    public MapProperty<String, Object> getProperties() {
+    public MapProperty<String, String> getProperties() {
         return this.properties;
     }
 
