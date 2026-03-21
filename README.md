@@ -31,4 +31,4 @@ You can also specify the following options in the ``classTokenReplacer`` block:
 If you encounter any issues, please report them on the
 [issue tracker](https://github.com/RaphiMC/ClassTokenReplacer/issues).  
 If you just want to talk or need help implementing ClassTokenReplacer feel free to join my
-[Discord](https://discord.gg/dCzT9XHEWu).
+[Discord](https://raphimc.net/discord).
