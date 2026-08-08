@@ -27,7 +27,6 @@ import org.gradle.api.file.Directory;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.tasks.Jar;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -36,7 +35,7 @@ import java.util.List;
 public class ClassTokenReplacerPlugin implements Plugin<Project> {
 
     @Override
-    public void apply(@NotNull Project project) {
+    public void apply(final Project project) {
         final SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
         sourceSets.configureEach(set -> {
             final ClassTokenReplacerExtension extension = set.getExtensions().create(ClassTokenReplacerExtension.class, "classTokenReplacer", ClassTokenReplacerExtensionImpl.class, project.getObjects());

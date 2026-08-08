@@ -24,10 +24,23 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.*;
+import org.gradle.api.tasks.CacheableTask;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
+import org.gradle.api.tasks.SkipWhenEmpty;
+import org.gradle.api.tasks.TaskAction;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.AnnotationNode;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -71,14 +84,18 @@ public abstract class ReplaceTokensTask extends DefaultTask {
         final Path outputDir = !this.getReplaceInPlace().get() ? this.getOutputDir().get().getAsFile().toPath() : null;
 
         for (File classesDir : this.getClassesDirs()) {
-            if (!classesDir.isDirectory()) continue;
+            if (!classesDir.isDirectory()) {
+                continue;
+            }
             final Path root = classesDir.toPath();
 
             try (Stream<Path> stream = Files.walk(root)) {
                 stream.forEach(sourcePath -> {
                     try {
                         final String relative = root.relativize(sourcePath).toString();
-                        if (!relative.endsWith(".class")) return;
+                        if (!relative.endsWith(".class")) {
+                            return;
+                        }
                         final byte[] bytecode = Files.readAllBytes(sourcePath);
                         final ClassNode classNode = new ClassNode();
                         new ClassReader(bytecode).accept(classNode, 0);
@@ -129,7 +146,7 @@ public abstract class ReplaceTokensTask extends DefaultTask {
                                 Files.write(sourcePath, result);
                             }
                         }
-                    } catch (IOException e) {
+                    } catch (final IOException e) {
                         throw new UncheckedIOException(e);
                     }
                 });
@@ -150,7 +167,9 @@ public abstract class ReplaceTokensTask extends DefaultTask {
     }
 
     private void handleAnnotations(final List<AnnotationNode> annotations, final AtomicBoolean hasReplacements) {
-        if (annotations == null) return;
+        if (annotations == null) {
+            return;
+        }
 
         for (AnnotationNode annotationNode : annotations) {
             this.handleAnnotation(annotationNode, hasReplacements);
@@ -158,7 +177,9 @@ public abstract class ReplaceTokensTask extends DefaultTask {
     }
 
     private void handleAnnotation(final AnnotationNode annotationNode, final AtomicBoolean hasReplacements) {
-        if (annotationNode.values == null) return;
+        if (annotationNode.values == null) {
+            return;
+        }
 
         for (int i = 1; i < annotationNode.values.size(); i += 2) {
             final Object value = annotationNode.values.get(i);
