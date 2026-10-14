@@ -9,7 +9,7 @@ plugins {
 dependencies {
     compileOnly gradleApi()
 
-    api "org.ow2.asm:asm-commons:9.10.1"
+    api "org.ow2.asm:asm-commons:9.11"
 }
 
 gradlePlugin {
